@@ -12,7 +12,7 @@ const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '',
-  database: 'otrip'
+  database: 'Le nom votre base de données'
 });
 
 connection.connect((err) => {
