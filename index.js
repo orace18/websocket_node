@@ -2,18 +2,16 @@ const http = require('http');
 const express = require('express');
 const WebSocket = require('ws');
 const mysql = require('mysql');
+const dotenv = require('dotenv'); 
+dotenv.config(); 
 
 const app = express();
-const port = 7878;
-const hostname = "192.168.0.107";
+const port = process.env.PORT || 7878; 
+const hostname = process.env.HOSTNAME || '192.168.0.107'; 
 
-// Configurer la connexion à la base de données MySQL
-const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'Le nom votre base de données'
-});
+const dbConfig = require('./databases/configDatabase');
+
+const connection = mysql.createConnection(dbConfig);
 
 connection.connect((err) => {
   if (err) {
@@ -23,9 +21,10 @@ connection.connect((err) => {
   console.log('Connected to MySQL');
 });
 
-app.get('/', (req, res) => {
-  res.send('Hello World');
-});
+
+const routes = require('./routes/routes');
+
+app.use('/', routes);
 
 const server = http.createServer(app);
 
@@ -36,16 +35,11 @@ server.listen(port, hostname, () => {
 const wss = new WebSocket.Server({ server });
 
 wss.on('connection', function (ws, req) {
-  
   ws.on('message', message => {
     try {
-      // Analyse le message JSON
       const data = JSON.parse(message);
-      
-      // Extrayez les données de localisation
       const { userId, longitude, latitude } = data;
 
-      // Mettre à jour la base de données
       const query = 'UPDATE users SET positions = JSON_SET(positions, "$.longitude", ?, "$.latitude", ?) WHERE id = ?';
       connection.query(query, [longitude, latitude, userId], (error, results, fields) => {
         if (error) {
